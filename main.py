@@ -9,10 +9,13 @@ def get_engine():
     if not db_url:
         # fallback local (solo para pruebas en tu PC)
         db_url = "postgresql://postgres:postgres@localhost:5432/proyectoBD"
+
     # Render a veces da postgres:// ... SQLAlchemy prefiere postgresql://
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
-    return create_engine(db_url, pool_pre_ping=True)
+
+    # Engine (SQLAlchemy 2.x) + reconexión automática
+    return create_engine(db_url, pool_pre_ping=True, future=True)
 
 @app.get("/")
 def root():
@@ -33,7 +36,9 @@ def health():
 def listar_clientes():
     engine = get_engine()
     with engine.connect() as conn:
-        rows = conn.execute(text("SELECT id_cliente, nombre, direccion, telefono FROM clientes ORDER BY id_cliente")).mappings().all()
+        rows = conn.execute(
+            text("SELECT id_cliente, nombre, direccion, telefono FROM clientes ORDER BY id_cliente")
+        ).mappings().all()
     return list(rows)
 
 @app.get("/productos")
@@ -55,3 +60,4 @@ def listar_ordenes():
             FROM ordenes ORDER BY id_orden
         """)).mappings().all()
     return list(rows)
+
