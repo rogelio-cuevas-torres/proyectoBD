@@ -14,8 +14,19 @@ def get_engine():
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
 
+    # Forzar el driver psycopg (v3) en SQLAlchemy:
+    # postgresql://  -> postgresql+psycopg://
+    if db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+
     # Engine (SQLAlchemy 2.x) + reconexión automática
-    return create_engine(db_url, pool_pre_ping=True, future=True)
+    # sslmode=require ayuda en conexiones administradas (como Render)
+    return create_engine(
+        db_url,
+        pool_pre_ping=True,
+        future=True,
+        connect_args={"sslmode": "require"},
+    )
 
 @app.get("/")
 def root():
@@ -60,4 +71,3 @@ def listar_ordenes():
             FROM ordenes ORDER BY id_orden
         """)).mappings().all()
     return list(rows)
-
